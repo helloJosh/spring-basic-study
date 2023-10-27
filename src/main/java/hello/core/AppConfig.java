@@ -34,6 +34,7 @@ public class AppConfig { //역할이 보여야함
     public OrderService orderService(){
         System.out.println("call AppConfig.orderService");
         return new OrderServiceImpl(memberRepository(),discountPolicy());
+        //return null;
     }
     @Bean
     public DiscountPolicy discountPolicy(){
