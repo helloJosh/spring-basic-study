@@ -138,6 +138,7 @@ public class AppConfig {
 
 ### 5.2. 탐색할 패키지의 시작 위치 지정
 ```java
+@Configuration
 @ComponentScan(
     basePackages = "hello.core",
 }
@@ -152,3 +153,40 @@ public class AppConfig {
 * `@Repository` : 스프링 데이터 접근 계층에서 사용
 * `@Configuration` : 스프링 설정 정보에서 사용
 
+### 5.4. 필터
+```java
+@Configuration
+@ComponentScan(
+    includeFilters = @Filter(type = FilterType.ANNOTATION, classes = MyIncludeComponent.class),
+    excludeFilters = @Filter(type = FilterType.ANNOTATION, classes = MyExcludeComponent.class)
+)
+```
+* `includeFilters` : 컴포넌트 스캔 대상을 추가로 지정한다.
+* `excludeFilters` : 컴포넌트 스캔에서 제외할 대상을 지정한다.
+* includeFilter는 정말 사용할 일이 없고, excludeFilter는 가끔있다고한다.
+> (필요할 일이 있으면 pdf 6.컴포넌트 스캔을 찾아보자)
+* 하지만 스프링기본설정에 최대한 맞추어 사용하는 것을 권장한다.
+
+### 5.5. 중복 등록과 충돌
+* 자동빈 등록 vs 자동빈 등록 : `ConflictingBeanDefinitionException` 예외 발생
+* 수동빈 등록 vs 자동빈 등록 : 수동 빈 등록이 우선권을 가진다.
+
+***
+# 6. 의존관계 자동 주입
+### 6.1. 생성자 주입
+```java
+@Component
+public class OrderServiceImpl implements OrderService {
+    private final MemberRepository memberRepository;
+    private final DiscountPolicy discountPolicy;
+    @Autowired
+    public OrderServiceImpl(MemberRepository memberRepository, DiscountPolicy discountPolicy) {
+        this.memberRepository = memberRepository;
+        this.discountPolicy = discountPolicy;
+    }    
+}
+```
+* 이름 그대로 생성자를 통해서 의존 관계를 주입 받는 방법이다.
+* 생성자 호출시점에 딱 1번만 호출되는 것이 보장된다.
+* **불변, 필수** 의존관계에 사용
+* **중요! 생성자가 딱 1개만 있으면 @Autowired를 생략해도 자동 주입 된다.** 물론 스프링 빈에만 해당한다.
