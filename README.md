@@ -26,3 +26,12 @@
 
 ### 1.5. 다형성의 한계
 - 인터페이스, 역할이 변경되면 많은 공수가 발생하게 된다.
+
+### 1.6. SOLID 5원칙
+    - SRP(Single Responsibility Principle) : 단일 책임의 원칙, 하나의 클래스 하나의 책임.
+    - OCP(Open/Closed Principle) : 개방 폐쇄의 원칙, 확장에는 열려있고 변경에는 닫혀있다.
+    - LSP(Liskov Substitution Principle) : 리스코프 치환의 원칙, 하위 클래스는 인터페이스의 규약을 지켜야한다.
+    - ISP(Interface Segregation Principle) : 인터페이스 분리의 원칙, 특정 클라이언트와의 인터페이스가 낫다.(세분화가 낫다)
+    - DIP(Dependency Inversion Principle) : 의존관계역전의 원칙, 구현클래스에 의존하는 것이 아닌 인터페이스에 의존해야한다. 
+
+## 2. 
