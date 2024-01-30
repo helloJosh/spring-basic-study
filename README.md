@@ -103,6 +103,52 @@ public class AppConfig {
 * `AnnotationConfigApplicationContext` 는 `AnnotatedBeanDefinitionReader` 를 사용해서 `AppConfig.class` 를 읽고 `BeanDefinition` 을 생성한다.
 * `GenericXmlApplicationContext` 는 `XmlBeanDefinitionReader` 를 사용해서 `appConfig.xml` 설정 정보를 읽고 `BeanDefinition` 을 생성한다.
 * 새로운 형식의 설정 정보가 추가되면, XxxBeanDefinitionReader를 만들어서 `BeanDefinition` 을 생성하면 된다.
+
+***
+# 4. 싱글톤 컨테이너
+### 4.1 스프링 싱글톤 컨테이너
+* 스프링 컨테이너는 기본적으로 객체 인스턴스를 싱글톤으로 관리한다.
+  + 컨테이너는 객체를 하나만 생성해서 관리한다.
+* 싱글톤 객체를 생성하고 관리하는 기능을 싱글톤 레지스트리라고 한다.
+* 스프링 컨테이너의 이러한 기능덕분에 싱글턴 패턴의 단점을 해결하면서 객체를 싱글톤으로 유지한다.
+  + 싱글톤 패턴을 위한 지저분한 코드가 들어가지 않는다
+  + DIP, OCP, 테스트, private 생성자로 부터 자유롭게 싱글톤을 사용한다.
+
+### 4.2 싱글톤 방식의 주의점
+    1. 무상태(stateless)로 설계해야 한다!
+    2. 특정 클라이언트에 의존적인 필드가 있으면 안된다.
+    3. 특정 클라이언트가 값을 변경할 수 있는 필드가 있으면 안된다!
+    4. 가급적 읽기만 가능해야 한다.
+    5. 필드 대신에 자바에서 공유되지 않는, 지역변수, 파라미터, ThreadLocal 등을 사용해야 한다.
+    6. 스프링 빈의 필드에 공유 값을 설정하면 정말 큰 장애가 발생할 수 있다!
     
-    
+### 4.3 @Configuration과 싱글톤
+* Bean으로 만들어진 객체는 중복되는 객체가 있어도 스프링 컨테이너가 알아서 중복을 제거해준다.
+
+***
+# 5. ComponentScan
+### 5.1. @Configuration
+```java
+@Configuration
+@ComponentScan(
+    excludeFilters = @Filter(type = FilterType.ANNOTATION, classes =
+    Configuration.class))
+```
+* AppConfig 클래스 파일에 위 Annotation을 추가하면 클래스마다 붙어있는 @Component을 자동으로 스캔하고 @Autowired를 찾아 의존관계를 자동으로 주입한다.
+
+### 5.2. 탐색할 패키지의 시작 위치 지정
+```java
+@ComponentScan(
+    basePackages = "hello.core",
+}
+```
+* 위와 같이 위 패키지를 포함하여 하위 패키지를 탐색한다.
+* 스프링에서는 패키지 위치를 지정하지 않고 설정 정보 클래스의 위치를 프로젝트 최상단에 두는 것을 권장한다.
+
+### 5.3. 컴포넌트 스캔 기본 대상
+* `@Component` : 컴포넌트 스캔에서 사용
+* `@Controller` : 스프링 MVC 컨트롤러에서 사용
+* `@Service` : 스프링 비즈니스 로직에서 사용
+* `@Repository` : 스프링 데이터 접근 계층에서 사용
+* `@Configuration` : 스프링 설정 정보에서 사용
 
