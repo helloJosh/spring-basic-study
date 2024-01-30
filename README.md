@@ -38,3 +38,37 @@
 ***
 # 2. 스프링 핵심 원리 토이프로젝트
 ### 2.1. 사용 버전
+    springframework.boot version '2.7.17'
+    java 11
+
+### 2.2. 주문 도메인 클래스 다이어그램
+![image](https://github.com/helloJosh/spring-basic-study/assets/37134368/9f75b142-e848-4911-abd5-7d7ddc14fd3e)
+
+### 2.3. 순수 자바 코드 작성 시
+![image](https://github.com/helloJosh/spring-basic-study/assets/37134368/b1991a1d-a7fd-4346-ad24-6470ca0614ac)
+```java
+public class OrderServiceImpl implements OrderService {
+    // private final DiscountPolicy discountPolicy = new FixDiscountPolicy();
+    private final DiscountPolicy discountPolicy = new RateDiscountPolicy();
+}
+```
+* 위 코드 때문에 구현체에 의존하는 일이 발생한다(DIP 위반)
+* 코드 확장시 클라이언트 코드에 영향을 준다(OCP 위반)
+
+### 2.4.1 AppConfig의 등장
+```java
+public class AppConfig {
+    public MemberService memberService() {
+        return new MemberServiceImpl(new MemoryMemberRepository());
+    }
+    public OrderService orderService() {
+        return new OrderServiceImpl(
+            new MemoryMemberRepository(),
+            //new FixDiscountPolicy()
+            new RateDiscountPolicy()
+        );
+    }
+}
+```
+* 구현 객체를 생성하고 연결하는 책임을 갖는 새로운 클래스를 만들어 문제를 해결한다.(DIP, OCP 해결)
+![image](https://github.com/helloJosh/spring-basic-study/assets/37134368/526eefd2-2577-448c-a607-028135bcfbbc)
