@@ -214,5 +214,60 @@ public class OrderServiceImpl implements OrderService {
 * 애플리케이션의 실제 코드와 관계 없는 테스트 코드
 * 스프링 설정을 목적으로 하는 @Configuration 같은 곳에서만 특별한 용도로 사용
 
+### 6.3. 일반 메서드 주입
+```java
+@Component
+public class OrderServiceImpl implements OrderService {
+    private MemberRepository memberRepository;
+    private DiscountPolicy discountPolicy;
+    @Autowired
+    public void init(MemberRepository memberRepository, DiscountPolicy discountPolicy) {
+        this.memberRepository = memberRepository;
+        this.discountPolicy = discountPolicy;
+    }
+}
+```
+* 일반 메서드를 통해 주입 받는다.
+* 한번에 여러 필드를 주입받들 수 있다.
+* 일반적으로 잘 사용하지 않는다.
 
+### 6.4. 옵션처리
+#### 6.4.1. @Autowired(required=false)
+```java
+@Autowired(required = false)
+public void setNoBean1(Member member) {
+    System.out.println("setNoBean1 = " + member);
+}
+```
+* 자동 주입할 대상이 없으면 수정자 메서드 자체가 호출이 안됨
+
+#### 6.4.2. org.springframework.lang.@Nullable
+```java
+@Autowired
+public void setNoBean2(@Nullable Member member) {
+    System.out.println("setNoBean2 = " + member);
+}
+```
+* 자동 주입할 대상이 없으면 null이 입력된다.
+
+#### 6.4.3. Optional<>
+```java
+@Autowired(required = false)
+public void setNoBean3(Optional<Member> member) {
+    System.out.println("setNoBean3 = " + member);
+}
+```
+* 자동 주입할 대상이 없으면 Optional.empty 호출
+
+### 6.5. 최신 트랜드
+```java
+@Component
+@RequiredArgsConstructor
+public class OrderServiceImpl implements OrderService {
+    private final MemberRepository memberRepository;
+    private final DiscountPolicy discountPolicy;
+}
+```
+* 롬복 `@RequiredArgsConstructor`를 통해 생성자 코드 생략
+* 생성자가 1개만 있으면 @Autowired도 생략되기 때문에 위 코드처럼 사용
 
