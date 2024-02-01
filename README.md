@@ -393,16 +393,21 @@ PrototypeBean HelloBean() {
 * 빈 반환 후 관리X
 > 스프링컨테이너는 프로토타입 빈을 생성하고, 의존관계 주입, 초기화까지만 처리
 
+
 ### 8.3. 프로토타입 스코프를 싱글톤 빈과 함께 사용시 문제점
 ![image](https://github.com/helloJosh/spring-basic-study/assets/37134368/f1e2203e-7069-4850-aaa6-b5c577b2b9db)
 * clientBean` 은 싱글톤이므로, 보통 스프링 컨테이너 생성 시점에 함께 생성되고, 의존관계 주입도 발생한다.
     + 1. `clientBean` 은 의존관계 자동 주입을 사용한다. 주입 시점에 스프링 컨테이너에 프로토타입 빈을 요청한다.
     + 2. 스프링 컨테이너는 프로토타입 빈을 생성해서 `clientBean` 에 반환한다. 프로토타입 빈의 count 필드 값은 0이다.
 * 이제 `clientBean` 은 프로토타입 빈을 내부 필드에 보관한다. (정확히는 참조값을 보관한다.)
+
+
 ![image](https://github.com/helloJosh/spring-basic-study/assets/37134368/0cda44a0-45b0-4339-9d0e-75e4eaa4e996)
 * 클라이언트 A는 `clientBean` 을 스프링 컨테이너에 요청해서 받는다.싱글톤이므로 항상 같은 `clientBean`이 반환된다.
     + 3. 클라이언트 A는 `clientBean.logic()` 을 호출한다.
     + 4. `clientBean` 은 prototypeBean의 `addCount()` 를 호출해서 프로토타입 빈의 count를 증가한다. count값이 1이 된다.
+
+
 ![image](https://github.com/helloJosh/spring-basic-study/assets/37134368/669490d4-ce3c-44dd-8016-1bf1127a6124)
 * 클라이언트 B는 `clientBean` 을 스프링 컨테이너에 요청해서 받는다.싱글톤이므로 항상 같은 `clientBean`이 반환된다.
 * **여기서 중요한 점이 있는데, clientBean이 내부에 가지고 있는 프로토타입 빈은 이미 과거에 주입이 끝난 빈이다. 주입 시점에 스프링 컨테이너에 요청해서 프로토타입 빈이 새로 생성이 된 것이지, 사용 할 때마다 새로 생성되는 것이 아니다!**
