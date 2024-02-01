@@ -271,3 +271,101 @@ public class OrderServiceImpl implements OrderService {
 * 롬복 `@RequiredArgsConstructor`를 통해 생성자 코드 생략
 * 생성자가 1개만 있으면 @Autowired도 생략되기 때문에 위 코드처럼 사용
 
+***
+# 7. 빈 생명주기 콜백
+### 7.1. 스프링 빈의 이벤트 라이프사이클
+* **스프링 컨테이너 생성** -> **스프링 빈 생성** -> **의존관계 주입** -> **초기화 콜백** -> **사용** -> **소멸전 콜백** -> **스프링 종료**
+* **초기화 콜백**: 빈이 생성되고, 빈의 의존관계 주입이 완료된 후 호출
+* **소멸전 콜백**: 빈이 소멸되기 직전에 호출
+
+### 7.2. 초기화 콜백, 소멸전 콜백 방법 3가지
+#### 7.2.1. 인터페이스(InitializingBean, DisposableBean)
+```java
+package hello.core.lifecycle;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.beans.factory.InitializingBean;
+public class NetworkClient implements InitializingBean, DisposableBean {
+    // 중략
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        connect();
+        call("초기화 연결 메시지");
+    }
+    @Override
+    public void destroy() throws Exception {
+        disConnect();
+    }
+}
+```
+* `InitializingBean` 은 `afterPropertiesSet()` 메서드로 초기화를 지원한다.
+* `DisposableBean` 은 `destroy()` 메서드로 소멸을 지원한다.
+* 이 인터페이스는 스프링 전용 인터페이스다. 해당 코드가 스프링 전용 인터페이스에 의존한다.
+* 초기화, 소멸 메서드의 이름을 변경할 수 없다.
+* 내가 코드를 고칠 수 없는 외부 라이브러리에 적용할 수 없다.
+
+#### 7.2.2. 설정 정보에 초기화 메서드, 종료메서드 지정
+```java
+public class NetworkClient {
+    // 중략
+    public void init() {
+        System.out.println("NetworkClient.init");
+        connect();
+        call("초기화 연결 메시지");
+    }
+    public void close() {
+        System.out.println("NetworkClient.close");
+        disConnect();
+    }
+}
+```
+```java
+@Configuration
+static class LifeCycleConfig {
+    @Bean(initMethod = "init", destroyMethod = "close")
+    public NetworkClient networkClient() {
+        NetworkClient networkClient = new NetworkClient();
+        networkClient.setUrl("http://hello-spring.dev");
+        return networkClient;
+    }
+}
+```
+* 메서드 이름을 자유롭게 줄 수 있다.
+* 스프링 빈이 스프링 코드에 의존하지 않는다.
+* 코드가 아니라 설정 정보를 사용하기 때문에 코드를 고칠 수 없는 외부 라이브러리에도 초기화, 종료 메서드를 적용할 수 있다.
+* destroy method는 기본값이 추론으로 등록되어있어 close, shutdown이라는 이름의 메서드를 자동으로 호출해주는 기능이 있다.
+
+#### 7.2.3. @PostConstruct, @PreDestory 애노테이션 지원
+```java
+package hello.core.lifecycle;
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+public class NetworkClient {
+    //w 중략
+    @PostConstruct
+    public void init() {
+        System.out.println("NetworkClient.init");
+        connect();
+        call("초기화 연결 메시지");
+    }
+    @PreDestroy
+    public void close() {
+        System.out.println("NetworkClient.close");
+        disConnect();
+    }
+}
+```
+* 최신 스프링에서 가장 권장하는 방법이다.
+* 애노테이션 하나만 붙이면 되므로 매우 편리하다.
+* 패키지를 잘 보면 `javax.annotation.PostConstruct` 이다. 스프링에 종속적인 기술이 아니라 JSR-250라는 자바 표준이다. 따라서 스프링이 아닌 다른 컨테이너에서도 동작한다.
+* 컴포넌트 스캔과 잘 어울린다.
+* 유일한 단점은 외부 라이브러리에는 적용하지 못한다는 것이다. 외부 라이브러리를 초기화, 종료 해야 하면 @Bean의 기능을 사용하자.
+
+***
+# 8. 빈 스코프
+### 8.1. 빈스코프란?
+* **싱글톤**: 기본 스코프, 스프링 컨테이너의 시작과 종료까지 유지되는 가장 넓은 범위의 스코프이다.
+* **프로토타입**: 스프링 컨테이너는 프로토타입 빈의 생성과 의존관계 주입까지만 관여하고 더는 관리하지 않는 매우 짧은 범위의 스코프이다.
+* **웹 관련 스코프**
+    + **request**: 웹 요청이 들어오고 나갈때 까지 유지되는 스코프이다.
+    + **session**: 웹 세션이 생성되고 종료될 때 까지 유지되는 스코프이다.
+    + **application**: 웹의 서블릿 컨텍스트와 같은 범위로 유지되는 스코프이다.
