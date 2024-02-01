@@ -190,3 +190,29 @@ public class OrderServiceImpl implements OrderService {
 * 생성자 호출시점에 딱 1번만 호출되는 것이 보장된다.
 * **불변, 필수** 의존관계에 사용
 * **중요! 생성자가 딱 1개만 있으면 @Autowired를 생략해도 자동 주입 된다.** 물론 스프링 빈에만 해당한다.
+
+### 6.2. 수정자 주입(Setter 주입)
+```java
+@Component
+public class OrderServiceImpl implements OrderService {
+    private MemberRepository memberRepository;
+    private DiscountPolicy discountPolicy;
+    @Autowired
+    public void setMemberRepository(MemberRepository memberRepository) {
+        this.memberRepository = memberRepository;
+    }
+    @Autowired
+    public void setDiscountPolicy(DiscountPolicy discountPolicy) {
+        this.discountPolicy = discountPolicy;
+    }
+}
+```
+* Setter 함수에 필드에 바로 주입하는 방법
+* 코드가 간결해서 많은 개발자들을 유혹하지만 외부에서 변경이 불가능해서 테스트 하기 힘들다는 치명적인 단점이 있다.
+* DI 프레임워크가 없으면 아무것도 할 수 없다.
+* 사용하지 않는 것을 권장한다.
+* 애플리케이션의 실제 코드와 관계 없는 테스트 코드
+* 스프링 설정을 목적으로 하는 @Configuration 같은 곳에서만 특별한 용도로 사용
+
+
+
