@@ -362,10 +362,100 @@ public class NetworkClient {
 
 ***
 # 8. 빈 스코프
-### 8.1. 빈스코프란?
+### 8.1. 빈스코프(빈이 존재할 수 있는 범위)
 * **싱글톤**: 기본 스코프, 스프링 컨테이너의 시작과 종료까지 유지되는 가장 넓은 범위의 스코프이다.
 * **프로토타입**: 스프링 컨테이너는 프로토타입 빈의 생성과 의존관계 주입까지만 관여하고 더는 관리하지 않는 매우 짧은 범위의 스코프이다.
 * **웹 관련 스코프**
     + **request**: 웹 요청이 들어오고 나갈때 까지 유지되는 스코프이다.
     + **session**: 웹 세션이 생성되고 종료될 때 까지 유지되는 스코프이다.
     + **application**: 웹의 서블릿 컨텍스트와 같은 범위로 유지되는 스코프이다.
+ 
+#### 8.1.1. 빈스코프 지정 방법
+```java
+@Scope("prototype")
+@Component
+public class HelloBean {}
+```
+* 컴포턴트 스캔 자동 등록
+```java
+@Scope("prototype")
+@Bean
+PrototypeBean HelloBean() {
+    return new HelloBean();
+}
+```
+* 수동 등록
+
+### 8.2. 프로토타입 스코프
+![image](https://github.com/helloJosh/spring-basic-study/assets/37134368/173cbbea-4eb9-49a9-afd6-025d88b8bc5a)
+* 빈 요청마다 객체 생성
+![image](https://github.com/helloJosh/spring-basic-study/assets/37134368/62cf6ff4-5521-4a59-8a5b-51c62d4c7a1d)
+* 빈 반환 후 관리X
+> 스프링컨테이너는 프로토타입 빈을 생성하고, 의존관계 주입, 초기화까지만 처리
+
+### 8.3. 프로토타입 스코프를 싱글톤 빈과 함께 사용시 문제점
+![image](https://github.com/helloJosh/spring-basic-study/assets/37134368/f1e2203e-7069-4850-aaa6-b5c577b2b9db)
+* clientBean` 은 싱글톤이므로, 보통 스프링 컨테이너 생성 시점에 함께 생성되고, 의존관계 주입도 발생한다.
+    + 1. `clientBean` 은 의존관계 자동 주입을 사용한다. 주입 시점에 스프링 컨테이너에 프로토타입 빈을 요청한다.
+    + 2. 스프링 컨테이너는 프로토타입 빈을 생성해서 `clientBean` 에 반환한다. 프로토타입 빈의 count 필드 값은 0이다.
+* 이제 `clientBean` 은 프로토타입 빈을 내부 필드에 보관한다. (정확히는 참조값을 보관한다.)
+![image](https://github.com/helloJosh/spring-basic-study/assets/37134368/0cda44a0-45b0-4339-9d0e-75e4eaa4e996)
+* 클라이언트 A는 `clientBean` 을 스프링 컨테이너에 요청해서 받는다.싱글톤이므로 항상 같은 `clientBean`이 반환된다.
+    + 3. 클라이언트 A는 `clientBean.logic()` 을 호출한다.
+    + 4. `clientBean` 은 prototypeBean의 `addCount()` 를 호출해서 프로토타입 빈의 count를 증가한다. count값이 1이 된다.
+![image](https://github.com/helloJosh/spring-basic-study/assets/37134368/669490d4-ce3c-44dd-8016-1bf1127a6124)
+* 클라이언트 B는 `clientBean` 을 스프링 컨테이너에 요청해서 받는다.싱글톤이므로 항상 같은 `clientBean`이 반환된다.
+* **여기서 중요한 점이 있는데, clientBean이 내부에 가지고 있는 프로토타입 빈은 이미 과거에 주입이 끝난 빈이다. 주입 시점에 스프링 컨테이너에 요청해서 프로토타입 빈이 새로 생성이 된 것이지, 사용 할 때마다 새로 생성되는 것이 아니다!**
+    + 5. 클라이언트 B는 `clientBean.logic()` 을 호출한다.
+    + 6. `clientBean` 은 prototypeBean의 `addCount()` 를 호출해서 프로토타입 빈의 count를 증가한다. 원래 count 값이 1이었으므로 2가 된다.
+
+### 8.4. 프로토타입 스코프 - 싱글톤 빈과 함께 상시 Provider로 문제해결
+#### 8.4.1 ObjectFactory, ObjectProvider
+```java
+@Autowired
+private ObjectProvider<PrototypeBean> prototypeBeanProvider;
+public int logic() {
+    PrototypeBean prototypeBean = prototypeBeanProvider.getObject();
+    prototypeBean.addCount();
+    int count = prototypeBean.getCount();
+    return count;
+}
+```
+* 실행해보면 `prototypeBeanProvider.getObject()` 을 통해서 항상 새로운 프로토타입 빈이 생성되는 것
+* 을 확인할 수 있다.
+* `ObjectProvider` 의 `getObject()` 를 호출하면 내부에서는 스프링 컨테이너를 통해 해당 빈을 찾아서 반환한다. (**DL**)
+* 스프링이 제공하는 기능을 사용하지만, 기능이 단순하므로 단위테스트를 만들거나 mock 코드를 만들기는 훨씬 쉬워진다.
+* ObjectProvider` 는 지금 딱 필요한 DL 정도의 기능만 제공한다.
+* ObjectProvider: ObjectFactory 상속, 옵션, 스트림 처리등 편의 기능이 많고, 별도의 라이브러리 필요 없음,스프링에 의존
+#### 8.4.2 JSR-330 Provider
+> Spring Boot 3.0 미만 `javax.inject:javax.inject:1` 사용
+> Spring Boot 3.0 이상 부터는 `jakarta.inject:jakarta.inject-api:2.0.1`를 사용
+```java
+@Autowired
+private Provider<PrototypeBean> provider;
+
+public int logic() {
+    PrototypeBean prototypeBean = provider.get();
+    prototypeBean.addCount();
+    int count = prototypeBean.getCount();
+    return count;
+}
+```
+* 실행해보면 `provider.get()` 을 통해서 항상 새로운 프로토타입 빈이 생성되는 것을 확인할 수 있다.
+* `provider` 의 `get()` 을 호출하면 내부에서는 스프링 컨테이너를 통해 해당 빈을 찾아서 반환한다. (**DL**)
+* 자바 표준이고, 기능이 단순하므로 단위테스트를 만들거나 mock 코드를 만들기는 훨씬 쉬워진다.
+* `Provider` 는 지금 딱 필요한 DL 정도의 기능만 제공한다.
+* `get()` 메서드 하나로 기능이 매우 단순하다.
+* 별도의 라이브러리가 필요하다.
+* 자바 표준이므로 스프링이 아닌 다른 컨테이너에서도 사용할 수 있다.
+
+### 8.5. 웹 스코프
+#### 8.5.1 웹 스코프 특징
+* 웹 스코프는 웹 환경에서만 동작한다.
+* 웹 스코프는 프로토타입과 다르게 스프링이 해당 스코프의 종료시점까지 관리한다. 따라서 종료 메서드가 호출된다.
+
+#### 8.5.2. 웹 스코프 종류
+* **request:** HTTP 요청 하나가 들어오고 나갈 때 까지 유지되는 스코프, 각각의 HTTP 요청마다 별도의 빈 인스턴스가 생성되고, 관리된다.
+* **session:** HTTP Session과 동일한 생명주기를 가지는 스코프
+* **application:** 서블릿 컨텍스트( `ServletContext` )와 동일한 생명주기를 가지는 스코프
+* **websocket:** 웹 소켓과 동일한 생명주기를 가지는 스코프
